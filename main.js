@@ -1,11 +1,11 @@
-const readline = require("node:readline");
+const readlinePromise = require("node:readline/promises");
 const { stdin: input, stdout: output } = require("node:process");
-const rl = readline.createInterface({ input, output });
+const rlp = readlinePromise.createInterface({ input, output });
 let meals = [];
-function start() {
+async function start() {
   console.log("Diário alimentar do Léo");
   showMeals();
-  askToAdd();
+  await askToAdd();
 }
 start();
 function showMeals() {
@@ -22,32 +22,69 @@ function showMeals() {
 }
 
 async function askToAdd() {
-  rl.question(
+  let mealData = [];
+  const addMeal = async () => {
+    const mealName = await rlp.question("Digite um nome para a refeição: ");
+    mealData.push(mealName);
+    const mealTime = await rlp.question("Digite a data da refeição: ");
+    mealData.push(mealTime);
+    const mealDate = await rlp.question("Digite o horário da refeição: ");
+    mealData.push(mealDate);
+    mealData.push(await addMealItem());
+    await askToAddFoodItem();
+    meals.push(mealData);
+    showMeals();
+    await askToAdd();
+  };
+  const defaultFn = () => {
+    console.log("Digite uma opção válida");
+  };
+  const failedFn = () => {
+    console.log("Obrigado por usar nosso app!");
+  };
+  await booleanQuestion(
     'Deseja adicionar uma refeição? Digite "s" para sim ou "n" para não:\n',
-    (response) => {
-      if (response === "s") {
-        let mealData = [];
-        const addMeal = () => {
-          rl.question("Digite um nome para a refeição: ", (mealName) => {
-            mealData.push(mealName);
-            rl.question("Digite a data da refeição: ", (mealDate) => {
-              mealData.push(mealDate);
-              rl.question("Digite o horário da refeição: ", (mealTime) => {
-                mealData.push(mealTime);
-                meals.push(mealData);
-                showMeals();
-                askToAdd();
-              });
-            });
-          });
-        };
-        addMeal();
-      } else if (response === "n") {
-        console.log("Obrigado por usar nosso app!");
-        rl.close();
-      } else {
-        console.log("Digite uma opção válida");
-      }
-    }
+    addMeal,
+    failedFn,
+    defaultFn
   );
+  rlp.close();
+}
+async function booleanQuestion(question, successFn, failedFn, defaultFn) {
+  const response = await rlp.question(question);
+  if (response === "s") {
+    return successFn();
+  }
+  if (response === "n") {
+    return failedFn();
+  }
+  return defaultFn();
+}
+
+async function addMealItem() {
+  const mealItem = { itemName: "", itemQuantity: "", solid: false };
+  mealItem.itemName = await rlp.question("Digite o nome do alimento: ");
+  mealItem.itemQuantity = await rlp.question(
+    "Digite a quantidade do alimento: "
+  );
+  itemType = await rlp.question(
+    "Esse alimento é sólido? Digite 's' para sim e 'n' para não: "
+  );
+  if (itemType === "s") {
+    mealItem.solid === true;
+  } else {
+    mealItem.solid === false;
+  }
+  return mealItem;
+}
+
+async function askToAddFoodItem() {
+  let response = await rlp.question(
+    "Deseja adicionar mais algum alimento? Digite 's ' para adicionar ou 'n' para seguir: "
+  );
+  if (response === "s") {
+    await addMealItem();
+  } else {
+    return;
+  }
 }
